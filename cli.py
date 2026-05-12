@@ -17,7 +17,7 @@ def terminal_interface():
 
     os.system('cls' if os.name == 'nt' else 'clear')
     print("=" * 60)
-    print("🚀 DEVDOCS AGENTIC RAG v2.0 (Local & Secure)")
+    print("🚀 DEVDOCS RAG")
     print("=" * 60)
 
     doc_path = input("📂 Enter docs folder path (default: './docs'): ") or "docs"
