@@ -244,8 +244,6 @@ devdocs-agent/
 ## 1. Start Backend
 
 ```bash
-cd backend
-
 pip install -r requirements.txt
 
 python api.py
