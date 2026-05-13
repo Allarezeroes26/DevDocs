@@ -1,7 +1,5 @@
 # 🤖 DEVDOCS AGENT — Local-First RAG Engine
 
-> A high-performance, privacy-first AI documentation assistant powered entirely by local models.
-
 DEVDOCS AGENT is a Local-First Retrieval-Augmented Generation (RAG) system designed for developers who want to chat with their own technical documentation completely offline.
 
 Using Hybrid Search, OCR fallback, local LLM inference, and persistent state management, the engine provides fast and source-aware responses without sending any data to the cloud.
