@@ -3,7 +3,7 @@ import re
 import time
 import json
 import hashlib
-import pickle  # For BM25 caching
+import pickle
 from typing import List, Dict, Any, Optional
 
 # Dependencies
@@ -96,7 +96,7 @@ class MainEngine:
             # 2. Process new/changed files
             new_chunks = []
             for file in added_or_changed:
-                if file in saved_state: # If updating existing file
+                if file in saved_state:
                     self.vector_db.delete(where={"source": file})
                 
                 file_path = os.path.join(folder_path, file)
@@ -188,9 +188,9 @@ You are the DEVDOCS AGENT, a senior technical instructor. Your purpose is to hel
                 "answer": (
                     "I was developed by **Erwin Bacani** as a specialized RAG portfolio project. "
                     "You can connect with him or view his other projects here:\n\n"
-                    "🚀 [Portfolio](https://your-portfolio-link.com)\n"
-                    "💻 [GitHub](https://github.com/your-username)\n"
-                    "👔 [LinkedIn](https://linkedin.com/in/your-profile)"
+                    "🚀 [Portfolio](https://portfolio-j0qq.onrender.com/)\n"
+                    "💻 [GitHub](https://github.com/Allarezeroes26)\n"
+                    "👔 [LinkedIn](https://www.linkedin.com/in/john-erwin-bacani-90853a359/)"
                 ),
                 "sources": ["System Identity"], "latency": round(time.time() - start, 2)
             }

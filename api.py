@@ -10,10 +10,9 @@ from contextlib import asynccontextmanager
 from main import MainEngine
 from models import QueryRequest, QueryResponse
 
-# --- GLOBAL STATE ---
 engine = MainEngine()
-is_indexing = False  # Soft-lock to prevent "stuck" event loop
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB Limit
+is_indexing = False 
+MAX_FILE_SIZE = 50 * 1024 * 1024
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,7 +38,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="DevDocs Pro API", lifespan=lifespan)
 
-# --- MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,15 +46,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- ROUTES ---
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "indexing": is_indexing}
 
 @app.get("/")
 async def get_status():
-    """Returns engine metadata for the frontend sidebar."""
+    """Returns engine metadata for the frontend. Matches 'devDocsApi.getStatus'."""
     return {
         "status": "online",
         "loaded_files": getattr(engine, 'loaded_files', []),
@@ -65,7 +58,7 @@ async def get_status():
 
 @app.post("/ask", response_model=QueryResponse)
 async def ask_question(request: QueryRequest):
-    """Handles RAG queries. Blocks if system is currently re-indexing."""
+    """Handles RAG queries. Matches 'devDocsApi.askQuestion'."""
     if is_indexing:
         raise HTTPException(
             status_code=503, 
@@ -73,7 +66,7 @@ async def ask_question(request: QueryRequest):
         )
 
     try:
-        # Offload CPU-heavy inference to a threadpool to keep API responsive
+        # Offload heavy inference to threadpool
         result = await run_in_threadpool(engine.query, request.question)
         
         return QueryResponse(
@@ -85,71 +78,16 @@ async def ask_question(request: QueryRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Inference engine failure.")
 
-import os
-import asyncio
-import traceback
-import aiofiles
-from fastapi import FastAPI, HTTPException, UploadFile, File, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.concurrency import run_in_threadpool
-from contextlib import asynccontextmanager
-
-from main import MainEngine
-from models import QueryRequest, QueryResponse
-
-# --- GLOBAL STATE ---
-engine = MainEngine()
-is_indexing = False  
-MAX_FILE_SIZE = 50 * 1024 * 1024  # Increased to 50MB for technical manuals
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global is_indexing
-    docs_path = "./docs"
-    if not os.path.exists(docs_path):
-        os.makedirs(docs_path)
-    
-    print("🚀 Warming up LLM and indexing context...")
-    is_indexing = True
-    try:
-        await run_in_threadpool(engine.load_local_context, docs_path)
-    except Exception as e:
-        print(f"⚠️ Startup warning: {e}")
-    finally:
-        is_indexing = False
-    yield
-    print("🛑 System offline.")
-
-app = FastAPI(title="DevDocs Pro API", lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-async def get_status():
-    """Returns engine metadata. Matches frontend 'loaded_files' key."""
-    return {
-        "status": "online",
-        "loaded_files": getattr(engine, 'loaded_files', []),
-        "model": getattr(engine, 'llm_model', "phi4")
-    }
-
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    """Matches 'devDocsApi.uploadFile'."""
     global is_indexing
     
-    # 1. Validation outside the try block to avoid 500 error
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        # This will now correctly return a 413 error to the frontend
         raise HTTPException(status_code=413, detail="File exceeds 50MB limit.")
 
     try:
@@ -159,7 +97,6 @@ async def upload_file(file: UploadFile = File(...)):
             await out_file.write(content)
 
         is_indexing = True
-        # Offload the heavy embedding process to a thread
         await run_in_threadpool(engine.load_local_context, "./docs")
         
         return {"message": f"Successfully indexed {file.filename}"}
@@ -171,7 +108,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.delete("/delete/{filename}")
 async def delete_file(filename: str):
-    """Deletes a PDF and forces the engine to re-index the remaining docs."""
+    """Matches 'devDocsApi.deleteFile'."""
     global is_indexing
     file_path = os.path.join("./docs", filename)
     
@@ -180,9 +117,8 @@ async def delete_file(filename: str):
 
     try:
         is_indexing = True
-        os.remove(file_path) # Synchronous delete is fine for small files
+        os.remove(file_path)
         
-        # Refresh the engine's memory
         await run_in_threadpool(engine.load_local_context, "./docs")
         
         return {"message": f"Removed {filename}", "files": engine.loaded_files}
@@ -192,8 +128,6 @@ async def delete_file(filename: str):
     finally:
         is_indexing = False
 
-# --- ENTRY POINT ---
 if __name__ == "__main__":
     import uvicorn
-    # Start the server on port 8000
     uvicorn.run(app, host="0.0.0.0", port=8000)
