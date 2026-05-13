@@ -282,9 +282,7 @@ http://localhost:3000
 Run the terminal-based engine:
 
 ```bash
-cd backend
-
-python cli_engine.py
+python cli.py
 ```
 
 ---
