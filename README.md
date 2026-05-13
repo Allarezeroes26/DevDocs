@@ -312,8 +312,6 @@ What are the fundamentals of programming?
 
 Summarize this chapter.
 
-How does vector search work?
-
 Guide me through this API documentation.
 ```
 
