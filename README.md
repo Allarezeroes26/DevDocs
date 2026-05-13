@@ -149,7 +149,7 @@ Sources:
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js |
-| Styling | Tailwind CSS |
+| Styling | Tailwind CSS, ShadCN |
 | State Management | Zustand |
 | Backend | FastAPI |
 | LLM Runtime | Ollama |
